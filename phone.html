@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>邏輯快手 · 最終穩定版</title>
+    <style>
+        /* ===== 簡潔乾淨的樣式 ===== */
+        * { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            min-height:100vh;
+            background: linear-gradient(145deg, #f9d6e0, #c6e0f5, #d4c5f9);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            overflow:hidden;
+            height:100vh;
+            width:100vw;
+        }
+        #app {
+            width:100vw;
+            max-width:1100px;
+            max-height:850px;
+            background:rgba(255,255,255,0.2);
+            backdrop-filter:blur(20px);
+            border-radius:40px;
+            padding:20px 28px;
+            display:flex;
+            flex-direction:column;
+            height:100vh;
+            border:1px solid rgba(255,255,255,0.3);
+            box-shadow:0 30px 80px rgba(0,0,0,0.06);
+        }
+        #topBar {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding-bottom:12px;
+            border-bottom:1px solid rgba(255,255,255,0.2);
+            flex-shrink:0;
+        }
+        #topBar .title {
+            font-size:26px;
+            font-weight:700;
+            color:#2d1b0e;
+        }
+        #topBar .title span {
+            background:linear-gradient(135deg,#f9d56e,#f7a072);
+            -webkit-background-clip:text;
+            -webkit-text-fill-color:transparent;
+        }
+        #topBar .info {
+            display:flex;
+            gap:16px;
+            font-size:18px;
+            font-weight:600;
+            color:#2d1b0e;
+        }
+        #topBar .info .round, #topBar .info .timer {
+            background:rgba(255,255,255,0.4);
+            padding:4px 18px;
+            border-radius:30px;
+            border:1px solid rgba(255,255,255,0.2);
+            backdrop-filter:blur(4px);
+            display:none;
+        }
+        #topBar .info .timer {
+            min-width:70px;
+            text-align:center;
+            color:#dc2626;
+            font-size:24px;
+            font-weight:700;
+        }
+        #topBar .info .timer.warning {
+            color:#b91c1c;
+            background:#fee2e2;
+            animation:pulse 0.5s infinite alternate;
+        }
+        @keyframes pulse { from{transform:scale(1);} to{transform:scale(1.06);} }
+
+        #gameArea {
+            flex:1;
+            display:flex;
+            flex-direction:column;
+            padding:12px 0 0 0;
+            overflow-y:auto;
+            gap:8px;
+        }
+        #setupScreen {
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+            height:100%;
+            overflow-y:auto;
+            padding-right:4px;
+        }
+        #setupScreen h1 {
+            font-size:24px;
+            font-weight:700;
+            color:#2d1b0e;
+        }
+        #setupScreen h1 small {
+            font-size:14px;
+            font-weight:400;
+            color:#4a3a2a;
+            opacity:0.7;
+        }
+        .row {
+            display:flex;
+            flex-wrap:wrap;
+            align-items:center;
+            gap:8px 14px;
+        }
+        .row label {
+            font-size:15px;
+            font-weight:600;
+            color:#2d1b0e;
+            min-width:60px;
+        }
+        .row select, .row input[type="range"] {
+            padding:3px 12px;
+            border-radius:30px;
+            border:1px solid rgba(0,0,0,0.06);
+            background:rgba(255,255,255,0.4);
+            font-size:15px;
+            font-family:inherit;
+            font-weight:500;
+            color:#2d1b0e;
+            outline:none;
+        }
+        .row input[type="range"] {
+            width:100px;
+            accent-color:#f9d56e;
+            border:none;
+            background:transparent;
+        }
+        .row .range-value {
+            font-weight:700;
+            color:#f9d56e;
+            min-width:24px;
+            text-align:center;
+        }
+        .avatar-group {
+            display:flex;
+            gap:8px;
+            flex-wrap:wrap;
+        }
+        .avatar-btn {
+            font-size:36px;
+            width:48px;
+            height:48px;
+            border-radius:30px;
+            border:2px solid rgba(0,0,0,0.06);
+            background:rgba(255,255,255,0.2);
+            cursor:pointer;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            transition:0.2s;
+            opacity:0.5;
+            filter:grayscale(0.6);
+        }
+        .avatar-btn.active {
+            opacity:1;
+            filter:grayscale(0);
+            border-color:#f9d56e;
+            background:rgba(249,213,110,0.2);
+            box-shadow:0 0 0 2px rgba(249,213,110,0.2);
+        }
+        .btn {
+            padding:5px 20px;
+            border-radius:30px;
+            border:none;
+            font-weight:600;
+            cursor:pointer;
+            font-family:inherit;
+            font-size:16px;
+            background:rgba(255,255,255,0.3);
+            color:#2d1b0e;
+            border:1px solid rgba(255,255,255,0.2);
+            transition:0.2s;
+        }
+        .btn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.04); }
+        .btn-primary { background:#f9d56e; border-color:#f9d56e; box-shadow:0 4px 12px rgba(249,213,110,0.15); }
+        .btn-primary:hover { background:#f7c948; box-shadow:0 8px 24px rgba(249,213,110,0.25); }
+        .btn-success { background:#6fcf97; color:#fff; border-color:#6fcf97; }
+        .btn-success:hover { background:#5bbf8a; }
+        .btn:disabled { opacity:0.4; cursor:not-allowed; transform:none !important; box-shadow:none !important; }
+        .load-status {
+            font-size:15px;
+            color:#2d1b0e;
+            font-weight:500;
+            min-height:24px;
+        }
+        .calibration-area {
+            border:2px dashed #f9d56e;
+            border-radius:20px;
+            padding:8px 12px;
+            background:rgba(249,213,110,0.04);
+        }
+        .cal-item {
+            padding:4px 12px;
+            border-radius:30px;
+            background:rgba(255,255,255,0.2);
+            border:1px solid rgba(255,255,255,0.2);
+            font-size:14px;
+            font-weight:500;
+            color:#2d1b0e;
+            transition:0.3s;
+            display:inline-block;
+            margin:2px;
+        }
+        .cal-item.done { background:#6fcf97; border-color:#6fcf97; color:#fff; }
+        .cal-item.active { border-color:#f9d56e; background:rgba(249,213,110,0.3); box-shadow:0 0 0 2px #f9d56e; }
+        .cal-status { font-size:14px; color:#2d1b0e; margin-top:4px; font-weight:500; }
+        .cal-btn {
+            background:#f9d56e;
+            border:none;
+            border-radius:30px;
+            padding:3px 16px;
+            font-weight:600;
+            cursor:pointer;
+            font-size:14px;
+            color:#2d1b0e;
+            transition:0.2s;
+            margin-top:4px;
+        }
+        .cal-btn:hover { background:#f7c948; transform:translateY(-2px); }
+
+        #gamePlay {
+            display:none;
+            flex:1;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+        }
+        #cardHint {
+            font-size:22px;
+            font-weight:600;
+            color:#2d1b0e;
+            text-align:center;
+            padding:6px 0;
+        }
+        #cardContainer {
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            width:100%;
+            flex:1;
+            min-height:200px;
+        }
+        #cardImage {
+            max-width:100%;
+            max-height:100%;
+            border-radius:20px;
+            box-shadow:0 12px 40px rgba(0,0,0,0.04);
+            border:2px solid rgba(255,255,255,0.3);
+            background:rgba(255,255,255,0.4);
+            object-fit:contain;
+            transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        #cardImage.flip { transform:rotateY(360deg) scale(1.02); }
+        #legend {
+            text-align:center;
+            font-size:13px;
+            color:#2d1b0e;
+            border-top:1px solid rgba(255,255,255,0.2);
+            padding:6px 0;
+            flex-shrink:0;
+        }
+
+        #statusBar {
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:8px 0 0 0;
+            border-top:1px solid rgba(255,255,255,0.2);
+            font-size:14px;
+            font-weight:500;
+            color:#2d1b0e;
+            flex-shrink:0;
+            flex-wrap:wrap;
+            gap:4px;
+        }
+        #statusBar .status-msg {
+            display:flex;
+            align-items:center;
+            gap:6px;
+        }
+        #statusBar .dot {
+            width:10px;
+            height:10px;
+            border-radius:50%;
+            display:inline-block;
+            background:#94a3b8;
+        }
+        #statusBar .dot.on { background:#6fcf97; box-shadow:0 0 16px #6fcf97; }
+        #statusBar .dot.off { background:#ef4444; }
+        #statusBar .phone-nfc-btn {
+            font-size:14px;
+            padding:2px 14px;
+            border-radius:30px;
+            border:1px solid rgba(255,255,255,0.2);
+            background:rgba(255,255,255,0.15);
+            cursor:pointer;
+            color:#2d1b0e;
+            font-family:inherit;
+            transition:0.2s;
+        }
+        #statusBar .phone-nfc-btn:hover { background:rgba(255,255,255,0.3); }
+        #statusBar .phone-nfc-btn.active { background:#6fcf97; color:#fff; border-color:#6fcf97; }
+
+        #modalContainer {
+            position:absolute;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            pointer-events:none;
+            z-index:50;
+            border-radius:inherit;
+        }
+        .modal-overlay {
+            position:absolute;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background:rgba(0,0,0,0.03);
+            backdrop-filter:blur(10px);
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            z-index:100;
+            border-radius:inherit;
+        }
+        .modal-box {
+            background:rgba(255,255,255,0.75);
+            backdrop-filter:blur(20px);
+            border-radius:36px;
+            padding:20px 28px;
+            max-width:400px;
+            width:90%;
+            text-align:center;
+            border:1px solid rgba(255,255,255,0.2);
+        }
+        .modal-box h2 { font-size:24px; font-weight:700; color:#2d1b0e; margin-bottom:8px; }
+        .modal-avatars {
+            display:flex;
+            justify-content:center;
+            gap:10px;
+            flex-wrap:wrap;
+            margin:12px 0;
+        }
+        .modal-avatars .ma-btn {
+            font-size:40px;
+            padding:4px 10px;
+            border-radius:30px;
+            border:1px solid rgba(255,255,255,0.2);
+            background:rgba(255,255,255,0.15);
+            cursor:pointer;
+            transition:0.2s;
+            line-height:1.2;
+        }
+        .modal-avatars .ma-btn:hover { background:rgba(255,255,255,0.5); transform:scale(1.1); }
+        .modal-avatars .ma-btn:active { transform:scale(0.9); }
+        .btn-close-modal {
+            font-size:16px;
+            padding:5px 24px;
+            border-radius:30px;
+            border:none;
+            background:#f9d56e;
+            color:#2d1b0e;
+            cursor:pointer;
+            font-weight:600;
+            margin-top:8px;
+            transition:0.2s;
+        }
+        .btn-close-modal:hover { background:#f7c948; transform:scale(1.02); }
+
+        #endScreen {
+            position:absolute;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background:rgba(0,0,0,0.02);
+            backdrop-filter:blur(14px);
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            align-items:center;
+            z-index:200;
+            border-radius:inherit;
+            padding:20px;
+            display:none;
+        }
+        #endScreen .end-box {
+            background:rgba(255,255,255,0.75);
+            backdrop-filter:blur(20px);
+            border-radius:36px;
+            padding:20px 28px;
+            max-width:400px;
+            width:100%;
+            text-align:center;
+            border:1px solid rgba(255,255,255,0.2);
+        }
+        #endScreen .trophy { font-size:50px; }
+        #endScreen .winner-name { font-size:28px; font-weight:700; color:#f9d56e; margin:4px 0; }
+        #endScreen .rank-list { text-align:left; margin:8px 0; padding:0; list-style:none; font-size:16px; }
+        #endScreen .rank-list li { display:flex; justify-content:space-between; padding:3px 6px; border-bottom:1px solid rgba(0,0,0,0.03); }
+        #endScreen .btn-restart {
+            font-size:17px;
+            padding:5px 24px;
+            border-radius:30px;
+            border:none;
+            background:#f9d56e;
+            color:#2d1b0e;
+            cursor:pointer;
+            font-weight:600;
+            transition:0.2s;
+            margin-top:4px;
+        }
+        #endScreen .btn-restart:hover { background:#f7c948; transform:scale(1.02); }
+
+        #particleContainer {
+            position:fixed;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            pointer-events:none;
+            z-index:999;
+            overflow:hidden;
+        }
+
+        @media (max-width:720px) {
+            #app { padding:12px 16px; border-radius:28px; }
+            .avatar-btn { font-size:30px; width:40px; height:40px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="particleContainer"></div>
+    <div id="app">
+        <div id="topBar">
+            <div class="title"><span>⚡ 邏輯快手</span></div>
+            <div class="info">
+                <span class="round" id="roundDisplay">第 0 / 10 回合</span>
+                <span class="timer" id="timerDisplay">10</span>
+            </div>
+        </div>
+
+        <div id="gameArea">
+            <!-- ===== 設定畫面 ===== -->
+            <div id="setupScreen">
+                <h1>🎮 遊戲設定 <small>v6.0</small></h1>
+
+                <div class="row">
+                    <label>📚 難度</label>
+                    <select id="levelSelect">
+                        <option value="1">等級 1</option>
+                        <option value="2" selected>等級 2</option>
+                        <option value="3">等級 3</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <label>👤 玩家</label>
+                    <select id="playersSelect">
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+                    <div class="avatar-group" id="avatarGroup">
+                        <button class="avatar-btn active" data-player="0">😊</button>
+                        <button class="avatar-btn active" data-player="1">😎</button>
+                        <button class="avatar-btn" data-player="2">🤔</button>
+                        <button class="avatar-btn" data-player="3">🥳</button>
+                    </div>
+                </div>
+                <div class="row">
+                    <label>⏳ 回合</label>
+                    <input type="range" id="roundSlider" min="1" max="20" value="10">
+                    <span class="range-value" id="roundValue">10</span>
+                </div>
+                <div class="row">
+                    <label>⏱️ 時間 (秒)</label>
+                    <input type="range" id="timeSlider" min="5" max="30" value="10">
+                    <span class="range-value" id="timeValue">10</span>
+                </div>
+
+                <div class="calibration-area">
+                    <div class="cal-title">🔗 校准 (建立卡片與物品的對應) <span style="font-size:14px;font-weight:400;opacity:0.7;">(可選，預設內建)</span></div>
+                    <div id="calProgress">
+                        <span class="cal-item" data-id="1">1️⃣ 金色鑰匙</span>
+                        <span class="cal-item" data-id="2">2️⃣ 紅色雨傘</span>
+                        <span class="cal-item" data-id="3">3️⃣ 綠色杯子</span>
+                        <span class="cal-item" data-id="4">4️⃣ 棕色水豚</span>
+                        <span class="cal-item" data-id="5">5️⃣ 藍色鍵盤</span>
+                    </div>
+                    <div class="cal-status" id="calStatus">尚未校准，請點擊「開始校准」並依序刷卡</div>
+                    <button class="cal-btn" id="calStartBtn">🔗 開始校准</button>
+                    <button class="cal-btn" id="calResetBtn" style="background:#e2e8f0; margin-left:8px;">↩️ 重置</button>
+                </div>
+
+                <div class="row">
+                    <button class="btn btn-primary" id="loadBtn">📂 載入目前難度卡牌</button>
+                    <span class="load-status" id="loadStatus">尚未載入</span>
+                </div>
+                <div class="row">
+                    <button class="btn btn-success" id="saveAndPlayBtn" disabled>🚀 開始遊戲</button>
+                    <button class="btn" id="exportBtn">📤 匯出答案</button>
+                </div>
+            </div>
+
+            <!-- ===== 遊戲進行畫面 ===== -->
+            <div id="gamePlay">
+                <div id="cardHint">🔍 請找出正確的物品！</div>
+                <div id="cardContainer">
+                    <img id="cardImage" src="" alt="卡牌">
+                </div>
+            </div>
+            <div id="legend">📌 載入卡牌後自動分配答案</div>
+        </div>
+
+        <div id="statusBar">
+            <div class="status-msg">
+                <span class="dot off" id="nfcDot"></span>
+                <span id="statusText">等待載入...</span>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <span style="font-size:12px; opacity:0.5;">🔢 1-5 模擬</span>
+                <button class="phone-nfc-btn" id="phoneNfcBtn">📱 手機 NFC</button>
+                <button class="phone-nfc-btn" id="bgmBtn" style="border-color:#f9d56e; color:#f9d56e;">🎵 音樂</button>
+            </div>
+        </div>
+
+        <div id="modalContainer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:50; border-radius:inherit;"></div>
+        <div id="endScreen">
+            <div class="end-box">
+                <div class="trophy">🏆</div>
+                <div class="winner-name" id="winnerName">冠軍</div>
+                <div style="font-size:15px; color:#64748b; margin-bottom:4px;">最終排名</div>
+                <ul class="rank-list" id="rankList"></ul>
+                <button class="btn-restart" id="restartBtn">🔄 再玩一次</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================================================================
+        //  最終穩定版 · 保證 NFC 可用
+        //  首先檢查並儲存 navigator.nfc 的可用性
+        // ================================================================
+
+        // --- 第一步：立即檢測 NFC 並儲存結果（不依賴任何其他程式碼） ---
+        const NFC_AVAILABLE = ('nfc' in navigator);
+        console.log('[NFC] 頁面載入，navigator.nfc 是否存在:', NFC_AVAILABLE);
+
+        // --- 第二步：遊戲核心程式碼（獨立運作） ---
+        const ITEMS_DEFAULT = [
+            { id: 1, name: '金色鑰匙', uid: '939224713' },
+            { id: 2, name: '紅色雨傘', uid: '117141129' },
+            { id: 3, name: '綠色杯子', uid: '75692681' },
+            { id: 4, name: '棕色水豚', uid: '737898121' },
+            { id: 5, name: '藍色鍵盤', uid: '915814537' }
+        ];
+        const AVATARS = ['😊', '😎', '🤔', '🥳'];
+        const AVATAR_NAMES = ['開心', '酷炫', '思考', '狂歡'];
+
+        const $ = id => document.getElementById(id);
+        const dom = {
+            setupScreen: $('setupScreen'),
+            gamePlay: $('gamePlay'),
+            loadBtn: $('loadBtn'),
+            loadStatus: $('loadStatus'),
+            saveAndPlayBtn: $('saveAndPlayBtn'),
+            exportBtn: $('exportBtn'),
+            cardImage: $('cardImage'),
+            cardHint: $('cardHint'),
+            roundDisplay: $('roundDisplay'),
+            timerDisplay: $('timerDisplay'),
+            statusText: $('statusText'),
+            nfcDot: $('nfcDot'),
+            phoneNfcBtn: $('phoneNfcBtn'),
+            bgmBtn: $('bgmBtn'),
+            endScreen: $('endScreen'),
+            winnerName: $('winnerName'),
+            rankList: $('rankList'),
+            restartBtn: $('restartBtn'),
+            modalContainer: $('modalContainer'),
+            avatarGroup: $('avatarGroup'),
+            levelSelect: $('levelSelect'),
+            playersSelect: $('playersSelect'),
+            roundSlider: $('roundSlider'),
+            roundValue: $('roundValue'),
+            timeSlider: $('timeSlider'),
+            timeValue: $('timeValue'),
+            calStartBtn: $('calStartBtn'),
+            calResetBtn: $('calResetBtn'),
+            calStatus: $('calStatus'),
+            calProgress: $('calProgress'),
+            app: $('app'),
+        };
+
+        let cardFiles = [];
+        let answerMap = [];
+        let currentLevel = 2;
+        let gameState = {
+            players: [true, true, false, false],
+            scores: [0, 0, 0, 0],
+            activePlayers: [],
+            currentRound: 0,
+            totalRounds: 10,
+            timerLimit: 10,
+            deck: [],
+            currentCardIndex: -1,
+            isPlaying: false,
+            isWaitingNFC: false,
+            timerLeft: 10,
+            timerInterval: null,
+            roundActive: false,
+            answered: false,
+        };
+        let bgmEnabled = true,
+            soundEnabled = true,
+            bgmVolume = 0.7,
+            sfxVolume = 0.8;
+
+        let uidMap = {};
+        let reverseMap = {};
+        let ITEMS = [];
+        let calState = {
+            active: false,
+            currentIndex: 0,
+            done: [false, false, false, false, false],
+        };
+
+        let audioCtx = null;
+        let bgmInterval = null;
+        let bgmActive = false;
+        let bgmNodes = [];
+
+        // 手機 NFC 變數
+        let phoneNFCWatchAbortController = null;
+        let isPhoneNFCEnabled = false;
+
+        // ===== 記錄功能 =====
+        const RECORD_KEY = 'gameRecords';
+
+        function getRecords() {
+            try { const data = localStorage.getItem(RECORD_KEY); return data ? JSON.parse(data) : []; } catch { return []; }
+        }
+
+        function saveRecords(records) {
+            localStorage.setItem(RECORD_KEY, JSON.stringify(records));
+        }
+
+        function addRecord(record) {
+            const records = getRecords();
+            records.push(record);
+            saveRecords(records);
+        }
+
+        function clearRecords() {
+            localStorage.removeItem(RECORD_KEY);
+        }
+
+        function formatTime(ts) {
+            const d = new Date(ts);
+            return d.toLocaleString('zh-TW', { hour12: false });
+        }
+
+        function saveGameRecord() {
+            const activeIndices = gameState.activePlayers;
+            const ranked = activeIndices.map(idx => ({ emoji: AVATARS[idx], score: gameState.scores[idx] || 0 }));
+            ranked.sort((a, b) => b.score - a.score);
+            const record = {
+                id: Date.now(),
+                timestamp: Date.now(),
+                level: parseInt(dom.levelSelect.value),
+                playerCount: activeIndices.length,
+                rounds: gameState.totalRounds,
+                rank: ranked,
+            };
+            addRecord(record);
+        }
+
+        // ============================================================
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            }
+        }
+
+        function getBGMVolume() { return soundEnabled ? bgmVolume : 0; }
+
+        function getSFXVolume() { return soundEnabled ? sfxVolume : 0; }
+
+        function playBeep(freq, dur, type = 'sine', vol = 0.3, volType = 'sfx') {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.type = type;
+                o.frequency.value = freq;
+                const v = vol * (volType === 'bgm' ? getBGMVolume() : getSFXVolume());
+                g.gain.setValueAtTime(v, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+                o.connect(g);
+                g.connect(audioCtx.destination);
+                o.start();
+                o.stop(audioCtx.currentTime + dur);
+            } catch (e) {}
+        }
+
+        function playCorrectSound() {
+            playBeep(523, 0.15, 'sine', 0.3, 'sfx');
+            setTimeout(() => playBeep(659, 0.15, 'sine', 0.3, 'sfx'), 150);
+            setTimeout(() => playBeep(784, 0.3, 'sine', 0.3, 'sfx'), 300);
+        }
+
+        function playWrongSound() { playBeep(300, 0.3, 'sawtooth', 0.2, 'sfx'); }
+
+        function playTimeoutSound() {
+            playBeep(440, 0.4, 'square', 0.2, 'sfx');
+            setTimeout(() => playBeep(330, 0.4, 'square', 0.2, 'sfx'), 400);
+        }
+
+        function playWinSound() {
+            [523, 587, 659, 784, 880, 784, 880].forEach((n, i) => setTimeout(() => playBeep(n, 0.2, 'sine', 0.25, 'sfx'),
+                i * 150));
+        }
+
+        // ===== BGM =====
+        function startBGM() {
+            if (bgmInterval) return;
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime,
+                duration = 60;
+            const droneOsc = audioCtx.createOscillator(),
+                droneGain = audioCtx.createGain();
+            droneOsc.type = 'sine';
+            droneOsc.frequency.value = 130.81;
+            droneGain.gain.setValueAtTime(0.06 * getBGMVolume(), now);
+            droneGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            droneOsc.connect(droneGain);
+            droneGain.connect(audioCtx.destination);
+            droneOsc.start(now);
+            droneOsc.stop(now + duration);
+            bgmNodes.push(droneOsc, droneGain);
+            [261.63, 329.63, 392.00].forEach(f => {
+                const osc = audioCtx.createOscillator(),
+                    gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = f;
+                gain.gain.setValueAtTime(0.025 * getBGMVolume(), now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + duration);
+                bgmNodes.push(osc, gain);
+            });
+            const melody = [523.25, 587.33, 659.25, 783.99, 880.00, 783.99, 659.25, 587.33,
+                523.25, 659.25, 783.99, 880.00, 987.77, 880.00, 783.99, 659.25
+            ];
+            let noteIndex = 0;
+            bgmInterval = setInterval(() => {
+                if (!soundEnabled) return;
+                playBeep(melody[noteIndex % melody.length], 0.25, 'sine', 0.09, 'bgm');
+                noteIndex++;
+            }, 300);
+            bgmActive = true;
+            dom.bgmBtn.textContent = '🔇 靜音';
+            dom.bgmBtn.style.borderColor = '#f9d56e';
+            dom.bgmBtn.style.color = '#f9d56e';
+        }
+
+        function stopBGM() {
+            if (bgmInterval) { clearInterval(bgmInterval);
+                bgmInterval = null; }
+            bgmNodes.forEach(node => { try { if (node.stop) node.stop(); if (node.disconnect) node.disconnect(); } catch (
+                e) {} });
+            bgmNodes = [];
+            bgmActive = false;
+            dom.bgmBtn.textContent = '🎵 音樂';
+            dom.bgmBtn.style.borderColor = 'rgba(255,255,255,0.2)';
+            dom.bgmBtn.style.color = '#2d1b0e';
+        }
+
+        function toggleBGM() {
+            initAudio();
+            if (bgmActive) { stopBGM();
+                bgmEnabled = false; } else { startBGM();
+                bgmEnabled = true; }
+        }
+        dom.bgmBtn.addEventListener('click', toggleBGM);
+
+        // ---- 校准 ----
+        function updateCalUI() {
+            const items = dom.calProgress.querySelectorAll('.cal-item');
+            items.forEach((el, idx) => {
+                el.classList.toggle('done', calState.done[idx]);
+                el.classList.toggle('active', calState.active && calState.currentIndex === idx);
+            });
+            if (calState.done.every(v => v)) {
+                dom.calStatus.textContent = '✅ 校准完成！可以開始遊戲。';
+                dom.saveAndPlayBtn.disabled = false;
+            } else {
+                const nextIdx = calState.done.indexOf(false);
+                if (calState.active) {
+                    dom.calStatus.textContent = `⏳ 請刷卡：${ITEMS_DEFAULT[nextIdx].name} (物品${nextIdx+1})`;
+                } else {
+                    dom.calStatus.textContent = '尚未校准，請點擊「開始校准」並依序刷卡';
+                }
+                dom.saveAndPlayBtn.disabled = true;
+            }
+        }
+
+        function resetCalibration() {
+            calState.done = [false, false, false, false, false];
+            calState.active = false;
+            calState.currentIndex = 0;
+            uidMap = {};
+            reverseMap = {};
+            ITEMS = [];
+            localStorage.removeItem('uidMap');
+            localStorage.removeItem('calibrationDone');
+            updateCalUI();
+            dom.calStatus.textContent = '校准已重置，請點擊「開始校准」重新設定';
+            dom.statusText.textContent = '校准已重置';
+        }
+
+        function startCalibration() {
+            if (calState.done.every(v => v)) resetCalibration();
+            calState.active = true;
+            calState.currentIndex = 0;
+            uidMap = {};
+            reverseMap = {};
+            ITEMS = [];
+            calState.done = [false, false, false, false, false];
+            localStorage.removeItem('uidMap');
+            localStorage.removeItem('calibrationDone');
+            updateCalUI();
+            dom.calStatus.textContent = `請刷卡：${ITEMS_DEFAULT[0].name} (物品1)`;
+            dom.statusText.textContent = '校准進行中...';
+        }
+
+        function handleCalibration(uid) {
+            if (!calState.active) {
+                dom.statusText.textContent = `📡 讀到 UID: ${uid}，但未進入校准模式`;
+                return;
+            }
+            if (calState.done.every(v => v)) {
+                dom.calStatus.textContent = '校准已完成！';
+                return;
+            }
+
+            if (uidMap[uid] !== undefined) {
+                const alreadyItem = uidMap[uid];
+                dom.calStatus.textContent =
+                    `⚠️ 此卡片已分配給物品${alreadyItem} (${ITEMS_DEFAULT[alreadyItem-1].name})，請使用其他卡片`;
+                dom.statusText.textContent = `UID ${uid} 已使用`;
+                return;
+            }
+
+            const currentItemId = calState.currentIndex + 1;
+            if (reverseMap[currentItemId] !== undefined) {
+                dom.calStatus.textContent = `⚠️ 物品${currentItemId} 已經被其他卡片映射`;
+                return;
+            }
+
+            uidMap[uid] = currentItemId;
+            reverseMap[currentItemId] = uid;
+            calState.done[calState.currentIndex] = true;
+            ITEMS.push({
+                id: currentItemId,
+                name: ITEMS_DEFAULT[calState.currentIndex].name,
+                uid: uid,
+            });
+
+            const nextIdx = calState.done.indexOf(false);
+            if (nextIdx === -1) {
+                calState.active = false;
+                dom.calStatus.textContent = '🎉 校准完成！可以開始遊戲。';
+                dom.saveAndPlayBtn.disabled = false;
+                localStorage.setItem('uidMap', JSON.stringify(uidMap));
+                localStorage.setItem('calibrationDone', 'true');
+                dom.statusText.textContent = '校准完成！';
+                playWinSound();
+            } else {
+                calState.currentIndex = nextIdx;
+                dom.calStatus.textContent = `請刷卡：${ITEMS_DEFAULT[nextIdx].name} (物品${nextIdx+1})`;
+                dom.statusText.textContent = `✅ 已記錄 ${ITEMS_DEFAULT[currentItemId-1].name} (UID: ${uid})`;
+                playBeep(800, 0.1, 'sine', 0.2, 'sfx');
+            }
+            updateCalUI();
+        }
+
+        dom.calStartBtn.addEventListener('click', startCalibration);
+        dom.calResetBtn.addEventListener('click', resetCalibration);
+
+        // ---- 載入儲存校准 ----
+        function loadCalibration() {
+            const saved = localStorage.getItem('uidMap');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    const ids = Object.values(parsed);
+                    if ([1, 2, 3, 4, 5].every(id => ids.includes(id))) {
+                        uidMap = parsed;
+                        reverseMap = {};
+                        ITEMS = ITEMS_DEFAULT.map(item => {
+                            const uid = Object.keys(uidMap).find(k => uidMap[k] === item.id);
+                            if (uid) reverseMap[item.id] = uid;
+                            return { ...item, uid: uid };
+                        });
+                        calState.done = [true, true, true, true, true];
+                        calState.active = false;
+                        calState.currentIndex = 5;
+                        updateCalUI();
+                        dom.calStatus.textContent = '✅ 已載入先前校准結果';
+                        dom.saveAndPlayBtn.disabled = false;
+                        dom.statusText.textContent = '校准已載入';
+                        return true;
+                    }
+                } catch (e) {}
+            }
+            return false;
+        }
+
+        function applyDefaultCalibration() {
+            uidMap = {};
+            reverseMap = {};
+            ITEMS = ITEMS_DEFAULT.map(item => {
+                uidMap[item.uid] = item.id;
+                reverseMap[item.id] = item.uid;
+                return { ...item };
+            });
+            calState.done = [true, true, true, true, true];
+            calState.active = false;
+            calState.currentIndex = 5;
+            updateCalUI();
+            dom.calStatus.textContent = '✅ 使用預設校准 (UID 內建)';
+            dom.saveAndPlayBtn.disabled = false;
+            dom.statusText.textContent = '預設校准已應用';
+        }
+
+        // ---- IndexedDB ----
+        const DB_NAME = 'CardCacheDB';
+        const STORE_NAME = 'cards';
+        let db = null;
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => { db = e.target.result;
+                    resolve(db); };
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        function saveCardsToDB(cards, level) {
+            return new Promise((resolve, reject) => {
+                if (!db) return reject('DB not open');
+                try {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const key = `level${level}`;
+                    store.put({ id: key, data: cards.map(c => ({ imgData: c.img.src, answer: c.answer, name: c.name })) });
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = (e) => reject(e.target.error);
+                } catch (e) { reject(e); }
+            });
+        }
+
+        function loadCardsFromDB(level) {
+            return new Promise((resolve, reject) => {
+                if (!db) return reject('DB not open');
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const request = store.get(`level${level}`);
+                request.onsuccess = () => {
+                    const data = request.result;
+                    if (!data) return resolve(null);
+                    const cards = data.data.map(item => {
+                        const img = new Image();
+                        img.src = item.imgData;
+                        return { img, answer: item.answer, name: item.name };
+                    });
+                    resolve(cards);
+                };
+                request.onerror = reject;
+            });
+        }
+
+        async function loadCardsForLevel(level) {
+            try {
+                await openDB();
+                const cached = await loadCardsFromDB(level);
+                if (cached && cached.length > 0) {
+                    cardFiles = cached;
+                    answerMap = cardFiles.map(f => f.answer);
+                    dom.loadStatus.textContent = `✅ 自動載入 Level ${level} 快取 (${cardFiles.length} 張)`;
+                    dom.saveAndPlayBtn.disabled = false;
+                    dom.statusText.textContent = `✅ 已載入 Level ${level} 卡牌`;
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                console.warn('快取讀取失敗', e);
+                dom.loadStatus.textContent = `⚠️ 快取讀取失敗，請重新載入 Level ${level}`;
+                return false;
+            }
+        }
+
+        dom.loadBtn.addEventListener('click', async () => {
+            const level = parseInt(dom.levelSelect.value);
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.webkitdirectory = true;
+            input.multiple = true;
+            input.onchange = async (e) => {
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+                const firstPath = files[0].webkitRelativePath;
+                if (!firstPath.startsWith(`level${level}/`)) {
+                    alert(`請選擇 level${level} 資料夾！`);
+                    return;
+                }
+                dom.loadStatus.innerHTML =
+                    `<span style="display:inline-block; width:16px; height:16px; border:2px solid rgba(0,0,0,0.1); border-top-color:#f9d56e; border-radius:50%; animation: spin 0.8s linear infinite;"></span> 載入中...`;
+                const imageFiles = [];
+                for (const file of files) {
+                    if (!file.type.startsWith('image/')) continue;
+                    const parts = file.webkitRelativePath.split('/');
+                    if (parts.length < 3) continue;
+                    const folder = parts[parts.length - 2];
+                    const answer = parseInt(folder);
+                    if (isNaN(answer) || answer < 1 || answer > 5) continue;
+                    imageFiles.push({ file, answer, name: file.name });
+                }
+                if (imageFiles.length === 0) {
+                    dom.loadStatus.innerHTML = '⚠️ 未找到有效圖片 (需 levelX/1/ ~ /5/)';
+                    return;
+                }
+                imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+                let loaded = 0,
+                    total = imageFiles.length,
+                    imageData = [];
+                for (const entry of imageFiles) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            imageData.push({ img, answer: entry.answer, name: entry.name });
+                            loaded++;
+                            if (loaded === total) {
+                                cardFiles = imageData;
+                                answerMap = cardFiles.map(f => f.answer);
+                                saveCardsToDB(cardFiles, level).then(() => {
+                                    dom.loadStatus.innerHTML =
+                                        `✅ 載入完成！共 ${total} 張卡牌 (Level ${level}) (已快取)`;
+                                }).catch(err => {
+                                    console.error('快取儲存失敗:', err);
+                                    dom.loadStatus.innerHTML =
+                                        `✅ 載入完成！共 ${total} 張卡牌 (Level ${level}) (快取儲存失敗)`;
+                                });
+                                dom.saveAndPlayBtn.disabled = false;
+                                dom.statusText.textContent = `✅ 已載入 ${total} 張卡牌 (Level ${level})`;
+                            } else {
+                                dom.loadStatus.innerHTML =
+                                    `<span style="display:inline-block; width:16px; height:16px; border:2px solid rgba(0,0,0,0.1); border-top-color:#f9d56e; border-radius:50%; animation: spin 0.8s linear infinite;"></span> 載入中 ${loaded}/${total}`;
+                            }
+                        };
+                        img.onerror = () => { loaded++; if (loaded === total) { cardFiles = imageData;
+                                answerMap = cardFiles.map(f => f.answer);
+                                saveCardsToDB(cardFiles, level).then(() => { dom.loadStatus.innerHTML =
+                                        `✅ 載入完成 (部份失敗) ${cardFiles.length} 張 (Level ${level}) (已快取)`;
+                                    dom.saveAndPlayBtn.disabled = false;
+                                    dom.statusText.textContent =
+                                        `✅ 已載入 ${cardFiles.length} 張卡牌 (Level ${level})`;
+                                    }).catch(err => { dom.loadStatus.innerHTML =
+                                        `✅ 載入完成 (部份失敗) ${cardFiles.length} 張 (Level ${level}) (快取儲存失敗)`; }); } };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(entry.file);
+                }
+            };
+            input.click();
+        });
+
+        dom.levelSelect.addEventListener('change', async () => {
+            const level = parseInt(dom.levelSelect.value);
+            currentLevel = level;
+            const loaded = await loadCardsForLevel(level);
+            if (!loaded) {
+                dom.loadStatus.textContent = `請點擊「載入目前難度卡牌」選擇 level${level} 資料夾`;
+                dom.saveAndPlayBtn.disabled = true;
+            }
+        });
+
+        dom.exportBtn.addEventListener('click', () => {
+            if (answerMap.length === 0) { alert('尚未載入卡牌'); return; }
+            const data = JSON.stringify(answerMap, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'answers.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // ============================================================
+        //  核心 NFC 處理函數
+        // ============================================================
+        function handleNFC(uid) {
+            dom.statusText.textContent = `📡 讀到 UID: ${uid}`;
+
+            const itemId = uidMap[uid];
+            if (!itemId) {
+                dom.statusText.textContent = `❓ 未知卡片 (UID: ${uid})，請先校准`;
+                return;
+            }
+            const matchedItem = ITEMS.find(it => it.id === itemId);
+            if (!matchedItem) {
+                dom.statusText.textContent = `❓ 映射錯誤 (UID: ${uid} -> ID ${itemId})`;
+                return;
+            }
+
+            dom.statusText.textContent = `🔍 匹配到 ${matchedItem.name} (UID: ${uid})`;
+
+            if (!gameState.isPlaying || !gameState.roundActive) {
+                dom.statusText.textContent = `⏸️ 匹配到 ${matchedItem.name}，但遊戲未進行或回合已結束`;
+                return;
+            }
+            if (gameState.answered) {
+                dom.statusText.textContent = `⏳ 本回合已答對，等待下一回合`;
+                return;
+            }
+            if (!gameState.isWaitingNFC) {
+                dom.statusText.textContent = `⏳ 請等待下一回合`;
+                return;
+            }
+
+            const correctId = answerMap[gameState.currentCardIndex];
+            const isCorrect = (matchedItem.id === correctId);
+
+            if (isCorrect) {
+                gameState.answered = true;
+                gameState.isWaitingNFC = false;
+                if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+                dom.statusText.textContent = `✅ 正確！${matchedItem.name} 找到了！`;
+                playCorrectSound();
+                const rect = dom.cardImage.getBoundingClientRect();
+                emitStars(rect.left + rect.width / 2, rect.top + rect.height / 2, 60);
+                dom.cardImage.style.transform = 'scale(1.08) rotate(2deg)';
+                setTimeout(() => dom.cardImage.style.transform = 'scale(1) rotate(0)', 500);
+                setTimeout(() => showScorePicker(), 400);
+            } else {
+                dom.statusText.textContent = `❌ 再找找看！ (${matchedItem.name} 不對) · 繼續刷卡！`;
+                playWrongSound();
+                shakeScreen();
+                dom.cardImage.style.transition = 'transform 0.06s';
+                dom.cardImage.style.transform = 'translateX(-6px)';
+                setTimeout(() => dom.cardImage.style.transform = 'translateX(6px)', 70);
+                setTimeout(() => dom.cardImage.style.transform = 'translateX(-3px)', 140);
+                setTimeout(() => {
+                    dom.cardImage.style.transform = 'translateX(0)';
+                    dom.cardImage.style.transition = '';
+                }, 210);
+                gameState.isWaitingNFC = true;
+            }
+        }
+
+        // ============================================================
+        //  手機 NFC 模式（使用預先儲存的 NFC_AVAILABLE）
+        // ============================================================
+        async function enablePhoneNFC() {
+            if (isPhoneNFCEnabled) {
+                await disablePhoneNFC();
+                return;
+            }
+
+            if (!NFC_AVAILABLE) {
+                alert('❌ 此瀏覽器不支援 Web NFC API\n\n請確認：\n1. 使用 Android 手機的 Chrome 瀏覽器\n2. 網址必須是 HTTPS\n3. 手機 NFC 功能已開啟');
+                dom.statusText.textContent = '❌ 瀏覽器不支援 Web NFC';
+                return;
+            }
+
+            try {
+                const controller = new AbortController();
+                phoneNFCWatchAbortController = controller;
+
+                await navigator.nfc.watch((event) => {
+                    const uid = event.serialNumber;
+                    if (uid) {
+                        if (navigator.vibrate) navigator.vibrate(50);
+                        dom.statusText.textContent = `📡 感應到 UID: ${uid}`;
+                        if (calState.active) {
+                            handleCalibration(uid);
+                        } else {
+                            handleNFC(uid);
+                        }
+                    }
+                }, { signal: controller.signal });
+
+                isPhoneNFCEnabled = true;
+                dom.phoneNfcBtn.textContent = '📱 停止感應';
+                dom.phoneNfcBtn.classList.add('active');
+                dom.nfcDot.className = 'dot on';
+                dom.statusText.textContent = '📱 手機 NFC 已開啟，請將卡片靠近手機背面';
+                playBeep(880, 0.1, 'sine', 0.2, 'sfx');
+
+            } catch (err) {
+                console.error('NFC 啟動失敗:', err);
+                let errorMsg = '❌ NFC 啟動失敗:\n\n';
+                errorMsg += `錯誤名稱: ${err.name}\n`;
+                errorMsg += `錯誤訊息: ${err.message}\n\n`;
+                if (err.name === 'NotAllowedError') {
+                    errorMsg += '➡️ 請允許 NFC 權限 (點擊網址列左側鎖頭 → 權限 → NFC → 允許)';
+                } else if (err.name === 'NotSupportedError') {
+                    errorMsg += '➡️ 請確認手機 NFC 已開啟';
+                }
+                alert(errorMsg);
+                isPhoneNFCEnabled = false;
+                dom.phoneNfcBtn.textContent = '📱 手機 NFC';
+                dom.phoneNfcBtn.classList.remove('active');
+                dom.nfcDot.className = 'dot off';
+                dom.statusText.textContent = '❌ NFC 啟動失敗';
+            }
+        }
+
+        async function disablePhoneNFC() {
+            if (phoneNFCWatchAbortController) {
+                try {
+                    phoneNFCWatchAbortController.abort();
+                } catch (e) {}
+                phoneNFCWatchAbortController = null;
+            }
+            isPhoneNFCEnabled = false;
+            dom.phoneNfcBtn.textContent = '📱 手機 NFC';
+            dom.phoneNfcBtn.classList.remove('active');
+            dom.nfcDot.className = 'dot off';
+            dom.statusText.textContent = '⏹️ 手機 NFC 已關閉';
+        }
+
+        dom.phoneNfcBtn.addEventListener('click', async () => {
+            await enablePhoneNFC();
+        });
+
+        // ============================================================
+
+        // ---- 開始遊戲 ----
+        dom.saveAndPlayBtn.addEventListener('click', () => {
+            if (!isPhoneNFCEnabled) {
+                alert('請先開啟手機 NFC 感應（點擊「📱 手機 NFC」按鈕）才能開始遊戲！');
+                return;
+            }
+            if (!calState.done.every(v => v)) { alert('請先完成校准！'); return; }
+            if (cardFiles.length === 0) { alert('請先載入卡牌！'); return; }
+            const level = parseInt(dom.levelSelect.value);
+            const rounds = parseInt(dom.roundSlider.value);
+            const timerLimit = parseInt(dom.timeSlider.value);
+            document.querySelectorAll('#avatarGroup .avatar-btn').forEach((b, i) => gameState.players[i] = b.classList
+                .contains('active'));
+            gameState.activePlayers = gameState.players.map((v, i) => v ? i : -1).filter(i => i >= 0);
+            if (gameState.activePlayers.length === 0) { alert('請至少啟用一位玩家！'); return; }
+            gameState.scores = gameState.players.map(() => 0);
+            gameState.totalRounds = Math.min(rounds, cardFiles.length);
+            gameState.timerLimit = timerLimit;
+            gameState.deck = Array.from({ length: cardFiles.length }, (_, i) => i);
+            shuffleArray(gameState.deck);
+            gameState.currentRound = 0;
+            gameState.isPlaying = true;
+            gameState.answered = false;
+            dom.setupScreen.style.display = 'none';
+            dom.gamePlay.style.display = 'flex';
+            dom.endScreen.style.display = 'none';
+            dom.roundDisplay.style.display = 'inline-block';
+            dom.timerDisplay.style.display = 'inline-block';
+            nextRound();
+        });
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function nextRound() {
+            if (gameState.currentRound >= gameState.totalRounds || gameState.deck.length === 0) { endGame(); return; }
+            gameState.currentRound++;
+            gameState.answered = false;
+            gameState.roundActive = true;
+            gameState.isWaitingNFC = true;
+            const cardIndex = gameState.deck.pop();
+            gameState.currentCardIndex = cardIndex;
+            const entry = cardFiles[cardIndex];
+            dom.roundDisplay.textContent = `第 ${gameState.currentRound} / ${gameState.totalRounds} 回合`;
+            dom.cardHint.textContent = `🔍 請找出正確的物品！`;
+            dom.cardImage.classList.remove('flip');
+            void dom.cardImage.offsetWidth;
+            dom.cardImage.src = entry.img.src;
+            dom.cardImage.alt = entry.name;
+            dom.cardImage.classList.add('flip');
+
+            gameState.timerLeft = gameState.timerLimit;
+            dom.timerDisplay.textContent = gameState.timerLeft;
+            dom.timerDisplay.classList.remove('warning');
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            gameState.timerInterval = setInterval(() => {
+                gameState.timerLeft--;
+                dom.timerDisplay.textContent = gameState.timerLeft;
+                if (gameState.timerLeft <= 3) dom.timerDisplay.classList.add('warning');
+                else dom.timerDisplay.classList.remove('warning');
+                if (gameState.timerLeft <= 0) {
+                    clearInterval(gameState.timerInterval);
+                    gameState.timerInterval = null;
+                    handleTimeout();
+                }
+            }, 1000);
+            dom.statusText.textContent = '⏳ 等待刷卡...';
+            clearModal();
+        }
+
+        // ---- 得分 ----
+        function showScorePicker() {
+            const activeAvatars = gameState.activePlayers;
+            if (activeAvatars.length === 0) {
+                setTimeout(() => proceedAfterScore(), 300);
+                return;
+            }
+            if (activeAvatars.length === 1) {
+                const idx = activeAvatars[0];
+                gameState.scores[idx] = (gameState.scores[idx] || 0) + 1;
+                dom.statusText.textContent = `🎉 ${AVATARS[idx]} +1 分 (總分 ${gameState.scores[idx]})`;
+                setTimeout(() => proceedAfterScore(), 300);
+                return;
+            }
+            const container = dom.modalContainer;
+            let html =
+                `<div class="modal-overlay"><div class="modal-box"><h2>🌟 誰找到的？</h2><div style="font-size:16px; color:#64748b; margin-bottom:6px;">點擊頭像領取 +1 分</div><div class="modal-avatars">`;
+            for (const idx of activeAvatars) html += `<button class="ma-btn" data-player="${idx}">${AVATARS[idx]}</button>`;
+            html += `</div><div style="font-size:14px; color:#94a3b8; margin-top:6px;">👆 點擊得分者</div></div></div>`;
+            container.innerHTML = html;
+            container.style.pointerEvents = 'auto';
+            container.querySelectorAll('.ma-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.dataset.player);
+                    gameState.scores[idx] = (gameState.scores[idx] || 0) + 1;
+                    dom.statusText.textContent = `🎉 ${AVATARS[idx]} +1 分 (總分 ${gameState.scores[idx]})`;
+                    clearModal();
+                    setTimeout(() => proceedAfterScore(), 300);
+                });
+            });
+        }
+
+        function proceedAfterScore() {
+            if (gameState.currentRound >= gameState.totalRounds) endGame();
+            else nextRound();
+        }
+
+        function handleTimeout() {
+            if (gameState.answered) return;
+            gameState.roundActive = false;
+            dom.statusText.textContent = '⏰ 時間到！';
+            playTimeoutSound();
+            dom.timerDisplay.textContent = '0';
+            const container = dom.modalContainer;
+            container.innerHTML =
+                `<div class="modal-overlay"><div class="modal-box"><div class="modal-msg">⏰ 時間到！</div><div class="modal-sub">無人得分，下一回合</div><button class="btn-close-modal" id="timeoutOkBtn">繼續</button></div></div>`;
+            container.style.pointerEvents = 'auto';
+            document.getElementById('timeoutOkBtn').addEventListener('click', () => {
+                clearModal();
+                if (gameState.currentRound >= gameState.totalRounds) endGame();
+                else nextRound();
+            });
+            setTimeout(() => {
+                const btn = document.getElementById('timeoutOkBtn');
+                if (btn && container.style.pointerEvents === 'auto') btn.click();
+            }, 3500);
+        }
+
+        function clearModal() { dom.modalContainer.innerHTML = '';
+            dom.modalContainer.style.pointerEvents = 'none'; }
+
+        function shakeScreen() {
+            const app = dom.app;
+            app.style.transition = 'transform 0.05s';
+            app.style.transform = 'translateX(-3px)';
+            setTimeout(() => app.style.transform = 'translateX(3px)', 50);
+            setTimeout(() => app.style.transform = 'translateX(-2px)', 100);
+            setTimeout(() => app.style.transform = 'translateX(0)', 150);
+        }
+
+        // ---- 結束 ----
+        function endGame() {
+            gameState.isPlaying = false;
+            gameState.roundActive = false;
+            gameState.isWaitingNFC = false;
+            if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+            dom.gamePlay.style.display = 'none';
+            dom.endScreen.style.display = 'flex';
+            playWinSound();
+            emitConfetti(150);
+            saveGameRecord();
+
+            const activeIndices = gameState.activePlayers;
+            let maxScore = -1,
+                winnerIdx = activeIndices[0];
+            for (const idx of activeIndices)
+                if (gameState.scores[idx] > maxScore) { maxScore = gameState.scores[idx];
+                    winnerIdx = idx; }
+            dom.winnerName.textContent = `${AVATARS[winnerIdx]}`;
+
+            const ranked = activeIndices.map(idx => ({ emoji: AVATARS[idx], score: gameState.scores[idx] || 0 }));
+            ranked.sort((a, b) => b.score - a.score);
+            let rankHtml = '';
+            const medals = ['🥇', '🥈', '🥉', '4️⃣'];
+            ranked.forEach((p, i) => {
+                const medal = i < medals.length ? medals[i] : `${i+1}.`;
+                rankHtml +=
+                    `<li><span><span class="rank-emoji">${medal}</span> ${p.emoji}</span><span class="rank-score">${p.score} 分</span></li>`;
+            });
+            dom.rankList.innerHTML = rankHtml;
+            dom.roundDisplay.style.display = 'none';
+            dom.timerDisplay.style.display = 'none';
+        }
+
+        // ---- 粒子 ----
+        const particles = [];
+        let particleAnimId = null;
+
+        class Particle {
+            constructor(x, y, type, count = 1) {
+                this.type = type;
+                this.parts = [];
+                const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#FFE66D', '#A8E6CF', '#FF8A5C', '#6C5B7B', '#F08A5D',
+                    '#B83B5E', '#2D4059'
+                ];
+                for (let i = 0; i < count; i++) {
+                    const a = Math.random() * Math.PI * 2,
+                        s = 3 + Math.random() * 8,
+                        c = colors[Math.floor(Math.random() * colors.length)],
+                        sz = 6 + Math.random() * 16;
+                    this.parts.push({
+                        x: x + (Math.random() - 0.5) * 20,
+                        y: y + (Math.random() - 0.5) * 20,
+                        vx: Math.cos(a) * s * (0.5 + Math.random() * 0.5),
+                        vy: Math.sin(a) * s * (0.5 + Math.random() * 0.5) - 3,
+                        life: 1,
+                        decay: 0.008 + Math.random() * 0.012,
+                        size: sz,
+                        color: c,
+                        rot: Math.random() * 360,
+                        rotSpeed: (Math.random() - 0.5) * 12,
+                        type: this.type,
+                        gravity: 0.06 + Math.random() * 0.06,
+                    });
+                }
+            }
+            update() {
+                let alive = false;
+                for (const p of this.parts) {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += p.gravity;
+                    p.vx *= 0.99;
+                    p.vy *= 0.99;
+                    p.life -= p.decay;
+                    p.rot += p.rotSpeed;
+                    if (p.life > 0) alive = true;
+                }
+                return alive;
+            }
+            draw(ctx) {
+                for (const p of this.parts) {
+                    if (p.life <= 0) continue;
+                    ctx.save();
+                    ctx.globalAlpha = p.life;
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rot * Math.PI / 180);
+                    if (this.type === 'star') {
+                        const s = p.size * 0.4 * p.life;
+                        ctx.fillStyle = p.color;
+                        ctx.shadowColor = p.color;
+                        ctx.shadowBlur = 20;
+                        drawStar(ctx, 0, 0, 5, s, s * 0.5);
+                        ctx.fill();
+                    } else {
+                        const w = p.size * 0.6 * p.life,
+                            h = p.size * 0.3 * p.life;
+                        ctx.fillStyle = p.color;
+                        ctx.shadowColor = p.color;
+                        ctx.shadowBlur = 10;
+                        ctx.fillRect(-w / 2, -h / 2, w, h);
+                    }
+                    ctx.restore();
+                }
+            }
+        }
+
+        function drawStar(ctx, cx, cy, spikes, outerR, innerR) {
+            ctx.beginPath();
+            for (let i = 0; i < spikes * 2; i++) {
+                const r = i % 2 === 0 ? outerR : innerR;
+                const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                const x = cx + Math.cos(angle) * r,
+                    y = cy + Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+        }
+
+        function emitStars(x, y, count = 60) {
+            particles.push(new Particle(x, y, 'star', count));
+            startParticleLoop();
+        }
+
+        function emitConfetti(count = 150) {
+            const cx = window.innerWidth / 2,
+                cy = window.innerHeight / 2;
+            for (let i = 0; i < 4; i++) {
+                const x = cx + (Math.random() - 0.5) * 400,
+                    y = cy + (Math.random() - 0.5) * 200;
+                particles.push(new Particle(x, y, 'confetti', Math.floor(count / 4)));
+            }
+            startParticleLoop();
+        }
+
+        function startParticleLoop() {
+            if (particleAnimId) return;
+            const container = dom.particleContainer;
+            const canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            container.appendChild(canvas);
+            const cctx = canvas.getContext('2d');
+
+            function loop() {
+                cctx.clearRect(0, 0, canvas.width, canvas.height);
+                let anyAlive = false;
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const alive = particles[i].update();
+                    if (alive) { particles[i].draw(cctx);
+                        anyAlive = true; } else particles.splice(i, 1);
+                }
+                if (anyAlive || particles.length > 0) {
+                    particleAnimId = requestAnimationFrame(loop);
+                } else {
+                    container.removeChild(canvas);
+                    particleAnimId = null;
+                }
+            }
+            loop();
+        }
+
+        // ---- 鍵盤模擬 ----
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '1' && e.key <= '5') {
+                const idx = parseInt(e.key) - 1;
+                const item = ITEMS_DEFAULT[idx];
+                const simUid = item.uid;
+
+                if (calState.active) {
+                    if (calState.done[idx]) {
+                        dom.calStatus.textContent = `⚠️ 物品${idx+1} 已校准`;
+                        return;
+                    }
+                    if (calState.currentIndex !== idx) {
+                        dom.calStatus.textContent =
+                            `⏳ 請先刷卡：${ITEMS_DEFAULT[calState.currentIndex].name} (物品${calState.currentIndex+1})`;
+                        return;
+                    }
+                    uidMap[simUid] = item.id;
+                    reverseMap[item.id] = simUid;
+                    calState.done[idx] = true;
+                    const nextIdx = calState.done.indexOf(false);
+                    ITEMS.push({ id: item.id, name: item.name, uid: simUid });
+                    dom.statusText.textContent = `🔢 模擬校准 ${item.name} (UID: ${simUid})`;
+                    playBeep(800, 0.1, 'sine', 0.2, 'sfx');
+                    if (nextIdx === -1) {
+                        calState.active = false;
+                        dom.calStatus.textContent = '🎉 校准完成！可以開始遊戲。';
+                        dom.saveAndPlayBtn.disabled = false;
+                        localStorage.setItem('uidMap', JSON.stringify(uidMap));
+                        localStorage.setItem('calibrationDone', 'true');
+                        dom.statusText.textContent = '校准完成！';
+                        playWinSound();
+                    } else {
+                        calState.currentIndex = nextIdx;
+                        dom.calStatus.textContent = `請刷卡：${ITEMS_DEFAULT[nextIdx].name} (物品${nextIdx+1})`;
+                    }
+                    updateCalUI();
+                    return;
+                }
+
+                const matched = ITEMS.find(it => it.id === (idx + 1));
+                if (matched) {
+                    handleNFC(matched.uid);
+                } else {
+                    dom.statusText.textContent = `🔢 未校准物品${idx+1}`;
+                }
+            }
+        });
+
+        dom.restartBtn.addEventListener('click', () => {
+            dom.endScreen.style.display = 'none';
+            dom.setupScreen.style.display = 'flex';
+            dom.gamePlay.style.display = 'none';
+            gameState.scores = gameState.players.map(() => 0);
+            clearModal();
+            dom.statusText.textContent = '⏳ 重新開始';
+            dom.roundDisplay.style.display = 'none';
+            dom.timerDisplay.style.display = 'none';
+        });
+
+        dom.roundSlider.addEventListener('input', () => dom.roundValue.textContent = dom.roundSlider.value);
+        dom.timeSlider.addEventListener('input', () => dom.timeValue.textContent = dom.timeSlider.value);
+        dom.playersSelect.addEventListener('change', () => {
+            const cnt = parseInt(dom.playersSelect.value);
+            document.querySelectorAll('#avatarGroup .avatar-btn').forEach((b, i) => b.classList.toggle('active', i < cnt));
+        });
+        document.querySelectorAll('#avatarGroup .avatar-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.classList.toggle('active');
+                if (document.querySelectorAll('#avatarGroup .avatar-btn.active').length === 0) btn.classList
+                    .add('active');
+                const cnt = document.querySelectorAll('#avatarGroup .avatar-btn.active').length;
+                dom.playersSelect.value = cnt;
+            });
+        });
+
+        // ---- 初始化 ----
+        async function init() {
+            dom.roundDisplay.style.display = 'none';
+            dom.timerDisplay.style.display = 'none';
+
+            const level = parseInt(dom.levelSelect.value);
+            const loaded = await loadCardsForLevel(level);
+            if (!loaded) {
+                dom.loadStatus.textContent = `請點擊「載入目前難度卡牌」選擇 level${level} 資料夾`;
+                dom.saveAndPlayBtn.disabled = true;
+            }
+            const calLoaded = loadCalibration();
+            if (!calLoaded) {
+                applyDefaultCalibration();
+            }
+            dom.nfcDot.className = 'dot off';
+            dom.phoneNfcBtn.textContent = '📱 手機 NFC';
+
+            // 顯示 NFC 狀態
+            if (NFC_AVAILABLE) {
+                dom.statusText.textContent = '✅ 此裝置支援 Web NFC，點擊「📱 手機 NFC」啟用';
+            } else {
+                dom.statusText.textContent = '❌ 此裝置不支援 Web NFC，請使用 Android Chrome 並確保 HTTPS';
+            }
+
+            // 啟動 BGM
+            try {
+                initAudio();
+                if (audioCtx && audioCtx.state === 'suspended') {
+                    const resumeHandler = () => {
+                        audioCtx.resume().then(() => {
+                            if (bgmEnabled && !bgmActive) startBGM();
+                        }).catch(() => {});
+                        document.removeEventListener('click', resumeHandler);
+                    };
+                    document.addEventListener('click', resumeHandler, { once: true });
+                } else {
+                    if (bgmEnabled && !bgmActive) startBGM();
+                }
+            } catch (e) { console.warn('BGM 啟動失敗:', e); }
+
+            console.log('✅ 最終穩定版載入完成，NFC 支援:', NFC_AVAILABLE);
+        }
+
+        // 自動調整圖片大小
+        function resizeImage() {
+            const container = dom.cardContainer;
+            if (!container) return;
+            const w = container.clientWidth - 20;
+            const maxW = Math.min(w, 440);
+            dom.cardImage.style.maxWidth = maxW + 'px';
+            dom.cardImage.style.maxHeight = (maxW * 1.5) + 'px';
+        }
+        window.addEventListener('resize', resizeImage);
+        setTimeout(() => {
+            if (dom.cardContainer) {
+                const ro = new ResizeObserver(() => resizeImage());
+                ro.observe(dom.cardContainer);
+            }
+        }, 100);
+
+        init();
+    </script>
+</body>
+</html>
